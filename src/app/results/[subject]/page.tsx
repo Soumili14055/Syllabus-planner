@@ -1,6 +1,5 @@
-// File: src/app/results/[subject]/page.tsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams } from 'next/navigation';
 
 type MCQ = { question: string; options: string[]; correct_answer: string; };
@@ -26,7 +25,8 @@ export default function ResultsPage() {
                 const resultsData = sessionStorage.getItem('testResults');
                 if (!resultsData) { throw new Error("Could not find test results. Please take the test again."); }
                 const { testData, userAnswers } = JSON.parse(resultsData);
-                setTestData(testData); setUserAnswers(userAnswers);
+                setTestData(testData);
+                setUserAnswers(userAnswers);
 
                 const gradingPromises: Promise<any>[] = [];
                 testData.short_questions.forEach((q: WrittenQuestion, index: number) => {
@@ -50,11 +50,27 @@ export default function ResultsPage() {
         fetchAndGrade();
     }, []);
 
-    let mcqScore = 0;
-    if (testData && userAnswers) {
-        testData.mcqs.forEach((mcq, index) => { if (userAnswers.mcqs[index] === mcq.correct_answer) { mcqScore += 1; } });
-    }
-    const writtenScore = (gradedResults?.short_questions.reduce((sum, r) => sum + r.score, 0) || 0) + (gradedResults?.long_questions.reduce((sum, r) => sum + r.score, 0) || 0);
+    const mcqScore = useMemo(() => {
+        if (!testData || !userAnswers) return 0;
+        
+        let score = 0;
+        testData.mcqs.forEach((mcq, index) => {
+            const userAnswer = userAnswers.mcqs[index];
+            // ✅ FIX: Compare the full trimmed text of both answers
+            if (userAnswer && userAnswer.trim() === mcq.correct_answer.trim()) {
+                score += 1; // 2 marks per question
+            }
+        });
+        return score;
+    }, [testData, userAnswers]);
+
+    const writtenScore = useMemo(() => {
+        if (!gradedResults) return 0;
+        const shortScore = gradedResults.short_questions.reduce((sum, r) => sum + r.score, 0);
+        const longScore = gradedResults.long_questions.reduce((sum, r) => sum + r.score, 0);
+        return shortScore + longScore;
+    }, [gradedResults]);
+
     const totalScore = mcqScore + writtenScore;
 
     if (isLoading) return <div className="text-center p-10 font-semibold text-lg">Grading your test, please wait...</div>;
@@ -70,7 +86,24 @@ export default function ResultsPage() {
                     <p className="text-6xl font-bold text-purple-600">{totalScore} <span className="text-3xl text-gray-500">/ {testData.total_marks}</span></p>
                 </div>
                 <div className="space-y-12">
-                    <section><h2 className="text-2xl font-semibold border-b pb-2 mb-4">Multiple Choice Questions (Scored: {mcqScore}/10)</h2><div className="space-y-4">{testData.mcqs.map((mcq, index) => { const userAnswer = userAnswers.mcqs[index]; const isCorrect = userAnswer === mcq.correct_answer; return ( <div key={index} className={`p-4 rounded-lg ${isCorrect ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'} border`}><p className="font-semibold">{index + 1}. {mcq.question}</p><p className="text-sm mt-2">Your answer: <span className={`font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>{userAnswer || "Not Answered"}</span></p>{!isCorrect && <p className="text-sm">Correct answer: <span className="font-bold text-green-700">{mcq.correct_answer}</span></p>}</div> ); })}</div></section>
+                    <section>
+                        <h2 className="text-2xl font-semibold border-b pb-2 mb-4">Multiple Choice Questions (Scored: {mcqScore}/10)</h2>
+                        <div className="space-y-4">
+                            {testData.mcqs.map((mcq, index) => {
+                                const userAnswer = userAnswers.mcqs[index];
+                                // ✅ FIX: Compare the full trimmed text for styling
+                                const isCorrect = userAnswer ? userAnswer.trim() === mcq.correct_answer.trim() : false;
+                                return (
+                                    <div key={index} className={`p-4 rounded-lg ${isCorrect ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'} border`}>
+                                        <p className="font-semibold">{index + 1}. {mcq.question}</p>
+                                        <p className="text-sm mt-2">Your answer: <span className={`font-bold ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>{userAnswer || "Not Answered"}</span></p>
+                                        {!isCorrect && <p className="text-sm">Correct answer: <span className="font-bold text-green-700">{mcq.correct_answer}</span></p>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </section>
+                    {/* ... (Rest of your JSX remains the same) ... */}
                     <section><h2 className="text-2xl font-semibold border-b pb-2 mb-4">Short Answer Questions</h2><div className="space-y-6">{testData.short_questions.map((q, index) => ( <div key={index} className="p-4 rounded-lg bg-gray-50 border"><p className="font-semibold">{q.question} <span className="font-normal text-gray-500">({q.marks} Marks)</span></p><p className="text-sm mt-2 p-2 border bg-white rounded-md"><strong>Your Answer:</strong> {userAnswers.short_questions[index] || "Not Answered"}</p><div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md"><p className="font-bold text-blue-800">Score: {gradedResults.short_questions[index].score} / {q.marks}</p><p className="text-sm text-blue-700 mt-1"><strong>Feedback:</strong> {gradedResults.short_questions[index].feedback}</p></div></div>))}</div></section>
                     <section><h2 className="text-2xl font-semibold border-b pb-2 mb-4">Long Answer Questions</h2><div className="space-y-6">{testData.long_questions.map((q, index) => ( <div key={index} className="p-4 rounded-lg bg-gray-50 border"><p className="font-semibold">{q.question} <span className="font-normal text-gray-500">({q.marks} Marks)</span></p><p className="text-sm mt-2 p-2 border bg-white rounded-md"><strong>Your Answer:</strong> {userAnswers.long_questions[index] || "Not Answered"}</p><div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md"><p className="font-bold text-blue-800">Score: {gradedResults.long_questions[index].score} / {q.marks}</p><p className="text-sm text-blue-700 mt-1"><strong>Feedback:</strong> {gradedResults.long_questions[index].feedback}</p></div></div>))}</div></section>
                 </div>

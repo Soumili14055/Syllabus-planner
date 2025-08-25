@@ -17,18 +17,22 @@ export async function POST(request: NextRequest) {
     
     // ✅ --- MORE FOCUSED PROMPT ---
     const prompt = `
-      You are an expert academic tutor. Your task is to create practice questions for ONE specific topic ONLY.
-      IMPORTANT: Do NOT create general questions for a "final exam" or "mid-term exam". The questions MUST relate ONLY to the single topic provided below.
-      IGNORE any other topics or context outside of this one topic.
+  You are an expert academic tutor. Your task is to create practice questions AND a corresponding grading guide for ONE specific topic.
+  IMPORTANT: The questions and keywords MUST relate ONLY to the single topic provided below.
 
-      The specific topic is: "${topic}"
+  The specific topic is: "${topic}"
 
-      Based ONLY on this topic, generate:
-      - Two distinct short-answer questions worth 5 marks each.
-      - Two distinct long-answer, analytical questions worth 10 marks each.
+  Generate:
+  - Two distinct short-answer questions worth 5 marks each.
+  - Two distinct long-answer, analytical questions worth 10 marks each.
 
-      The output MUST be a valid JSON object with the keys "five_mark_questions" (an array of strings) and "ten_mark_questions" (an array of strings).
-    `;
+  For EACH question you generate, you MUST also provide an array of 3-5 essential keywords that would be expected in a perfect answer.
+
+  The output MUST be a valid JSON object. The JSON should have two keys: "five_mark_questions" and "ten_mark_questions".
+  Each key should contain an array of objects. Each object in the array must have two keys:
+  - "question": A string containing the question text.
+  - "keywords": An array of strings representing the essential keywords for grading.
+`;
 
     const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],

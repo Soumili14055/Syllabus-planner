@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
-    // ✅ --- MORE FOCUSED PROMPT ---
+    // ✅ --- UPDATED & MORE ROBUST PROMPT ---
     const prompt = `
       You are an expert exam question creator, specializing in Multiple Choice Questions (MCQs) for ONE specific topic.
       IMPORTANT: The questions MUST relate ONLY to the single topic provided below. Do NOT create questions that cover a whole syllabus or a final exam.
@@ -23,10 +23,13 @@ export async function POST(request: NextRequest) {
 
       The specific topic is: "${topic}"
 
-      Generate 5 distinct MCQs based ONLY on this topic. Each question should have 4 options.
+      Generate 5 distinct MCQs based ONLY on this topic. Each question should have 4 options, prefixed with "A. ", "B. ", "C. ", and "D. ".
 
       The output MUST be a valid JSON object with a single key "mcqs", which contains an array of objects.
-      Each object must have three keys: "question" (string), "options" (an array of 4 strings), and "correct_answer" (a string that exactly matches one of the options).
+      Each object must have three keys: 
+      - "question" (string)
+      - "options" (an array of 4 strings)
+      - "correct_answer" (a single uppercase letter, e.g., "A", "B", "C", or "D", that corresponds to the correct option).
     `;
 
     const result = await model.generateContent({
