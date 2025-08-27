@@ -1,59 +1,128 @@
+// File: src/app/page.tsx (or your syllabus form page)
 "use client";
 
 import { useState, FormEvent, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation"; // ✅ Import usePathname
+import Link from "next/link";
 import { auth } from "@/firebase/config";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
 
-// SVG Icon for the spinner
+// --- Reusable Components ---
+
 const Spinner = () => (
-  <svg
-    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-  >
-    <circle
-      className="opacity-25"
-      cx="12"
-      cy="12"
-      r="10"
-      stroke="currentColor"
-      strokeWidth="4"
-    ></circle>
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 
-         0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 
-         3.042 1.135 5.824 3 7.938l3-2.647z"
-    ></path>
+  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
   </svg>
 );
 
-// SVG Icon for file upload
 const UploadIcon = () => (
-  <svg
-    className="w-8 h-8 mb-4 text-gray-500"
-    aria-hidden="true"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 20 16"
-  >
-    <path
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 
-         5.56 0 0 0 16 6.5 5.5 5.5 0 0 
-         0 5.207 5.021C5.137 5.017 5.071 
-         5 5 5a4 4 0 0 0 0 8h2.167M10 
-         15V6m0 0L8 8m2-2 2 2"
-    />
+  <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
   </svg>
 );
 
+// ✅ --- Responsive and Sticky Navbar Component ---
+const Navbar = ({ user, onLogout }: { user: User | null; onLogout: () => void; }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  const getLinkClass = (path: string) => {
+    return pathname === path
+      ? "bg-indigo-600 text-white px-3 py-2 rounded-md text-sm font-medium"
+      : "text-gray-700 hover:bg-indigo-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium";
+  };
+
+  return (
+    // ✅ Added sticky, top-0, and z-50 to keep the navbar at the top
+    <nav className="bg-white shadow-md w-full sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <a href="/" className="text-2xl font-bold text-indigo-600">
+                🎓 StudyPlanner AI
+              </a>
+            </div>
+          </div>
+          {/* Desktop Menu */}
+          <div className="hidden md:block">
+            <div className="ml-4 flex items-center md:ml-6 space-x-4">
+              <Link href="/dashboard" className={getLinkClass("/dashboard")}>
+                  Home
+              </Link>
+              <Link href="/syllabus" className={getLinkClass("/syllabus")}>
+                  Syllabus Planner
+              </Link>
+              <Link href="/" className={getLinkClass("/features")}>
+                  Features
+              </Link>
+              <Link href="/" className={getLinkClass("/about")}>
+                  About
+              </Link>
+              {user ? (
+                <button onClick={onLogout} className="text-gray-700 hover:bg-red-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                  Logout
+                </button>
+              ) : (
+                <Link href="/login" className={getLinkClass("/login")}>
+                    Login
+                </Link>
+              )}
+            </div>
+          </div>
+          {/* Hamburger Button for Mobile */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-indigo-500 focus:outline-none"
+            >
+              <span className="sr-only">Open main menu</span>
+              <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                {isOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <Link href="/dashboard" className={`${getLinkClass("/dashboard")} block`}>
+                Home
+            </Link>
+            <Link href="/syllabus" className={`${getLinkClass("/syllabus")} block`}>
+                Syllabus Planner
+            </Link>
+            <Link href="/" className={`${getLinkClass("/features")} block`}>
+                Features
+            </Link>
+            <Link href="/" className={`${getLinkClass("/about")} block`}>
+                About
+            </Link>
+            {user ? (
+              <button onClick={onLogout} className="w-full text-left text-gray-700 hover:bg-red-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                Logout
+              </button>
+            ) : (
+              <Link href="/login" className={`${getLinkClass("/login")} block`}>
+                  Login
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+};
+
+
+// --- Main Page Component ---
 export default function SyllabusForm() {
   const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>("");
@@ -67,11 +136,10 @@ export default function SyllabusForm() {
 
   const router = useRouter();
 
-  // 🔐 Protect route: check if user is logged in
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        router.push("/login"); // redirect to login if not signed in
+        router.push("/login");
       } else {
         setUser(currentUser);
       }
@@ -119,7 +187,7 @@ export default function SyllabusForm() {
       sessionStorage.setItem("syllabusText", data.syllabusText);
       localStorage.removeItem("syllabusProgress");
 
-      router.push("/plan"); // ✅ Redirect after success
+      router.push("/plan");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unknown error occurred."
@@ -135,59 +203,8 @@ export default function SyllabusForm() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      {/* 🔵 Navigation Bar */}
-      <nav className="bg-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl font-bold text-indigo-600">
-                  🎓 StudyPlanner
-                </span>
-              </div>
-            </div>
-            <div className="hidden md:block">
-              <div className="ml-4 flex items-center md:ml-6">
-                <a
-                  href="/"
-                  className="text-gray-700 hover:bg-indigo-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Home
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-700 hover:bg-indigo-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Features
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-700 hover:bg-indigo-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  About
-                </a>
-                {user ? (
-                  <button
-                    onClick={handleLogout}
-                    className="text-gray-700 hover:bg-red-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Logout
-                  </button>
-                ) : (
-                  <a
-                    href="/login"
-                    className="text-gray-700 hover:bg-indigo-500 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Login
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar user={user} onLogout={handleLogout} />
 
-      {/* 📌 Main Content */}
       <main className="py-10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -202,24 +219,16 @@ export default function SyllabusForm() {
 
           <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-200/80">
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Step 1: File Upload */}
               <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-1">
                   <span className="text-indigo-600 font-bold">Step 1:</span>{" "}
                   Upload Your Syllabus
                 </h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  We'll analyze the content to create your plan. (PDF format
-                  only)
+                  We'll analyze the content to create your plan. (PDF format only)
                 </p>
-                <div
-                  className="flex items-center justify-center w-full"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <label
-                    htmlFor="syllabusFile"
-                    className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
-                  >
+                <div className="flex items-center justify-center w-full" onClick={() => fileInputRef.current?.click()}>
+                  <label htmlFor="syllabusFile" className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <UploadIcon />
                       <p className="mb-2 text-sm text-gray-500">
@@ -228,14 +237,7 @@ export default function SyllabusForm() {
                       </p>
                       <p className="text-xs text-gray-500">PDF (MAX. 5MB)</p>
                     </div>
-                    <input
-                      ref={fileInputRef}
-                      id="syllabusFile"
-                      type="file"
-                      className="hidden"
-                      accept=".pdf"
-                      onChange={handleFileChange}
-                    />
+                    <input ref={fileInputRef} id="syllabusFile" type="file" className="hidden" accept=".pdf" onChange={handleFileChange} />
                   </label>
                 </div>
                 {fileName && (
@@ -245,7 +247,6 @@ export default function SyllabusForm() {
                 )}
               </div>
 
-              {/* Step 2: End Date */}
               <div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-1">
                   <span className="text-indigo-600 font-bold">Step 2:</span> Set
@@ -254,22 +255,10 @@ export default function SyllabusForm() {
                 <p className="text-sm text-gray-500 mb-4">
                   When do you want to complete this syllabus?
                 </p>
-                <input
-                  type="date"
-                  id="endDate"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  className="w-full p-4 bg-gray-50 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
-                />
+                <input type="date" id="endDate" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={new Date().toISOString().split("T")[0]} className="w-full p-4 bg-gray-50 border border-gray-300 rounded-lg text-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow" />
               </div>
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isLoading || !syllabusFile || !endDate}
-                className="w-full flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-4 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
-              >
+              <button type="submit" disabled={isLoading || !syllabusFile || !endDate} className="w-full flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-4 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none">
                 {isLoading ? (
                   <>
                     <Spinner /> Generating Your Plan...

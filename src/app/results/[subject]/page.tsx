@@ -58,16 +58,19 @@ export default function ResultsPage() {
             const userAnswer = userAnswers.mcqs[index];
             // ✅ FIX: Compare the full trimmed text of both answers
             if (userAnswer && userAnswer.trim() === mcq.correct_answer.trim()) {
-                score += 1; // 2 marks per question
+                // Assuming 5 questions, 2 points each for a total of 10
+                score += 1; 
             }
         });
         return score;
     }, [testData, userAnswers]);
-
+    
     const writtenScore = useMemo(() => {
         if (!gradedResults) return 0;
-        const shortScore = gradedResults.short_questions.reduce((sum, r) => sum + r.score, 0);
-        const longScore = gradedResults.long_questions.reduce((sum, r) => sum + r.score, 0);
+
+        const shortScore = gradedResults.short_questions.reduce((sum, r) => sum + (Number(r.score) || 0), 0);
+        const longScore = gradedResults.long_questions.reduce((sum, r) => sum + (Number(r.score) || 0), 0);
+        
         return shortScore + longScore;
     }, [gradedResults]);
 
@@ -91,7 +94,7 @@ export default function ResultsPage() {
                         <div className="space-y-4">
                             {testData.mcqs.map((mcq, index) => {
                                 const userAnswer = userAnswers.mcqs[index];
-                                // ✅ FIX: Compare the full trimmed text for styling
+                                // ✅ FIX: Compare the full trimmed text for correct styling
                                 const isCorrect = userAnswer ? userAnswer.trim() === mcq.correct_answer.trim() : false;
                                 return (
                                     <div key={index} className={`p-4 rounded-lg ${isCorrect ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'} border`}>
@@ -103,9 +106,36 @@ export default function ResultsPage() {
                             })}
                         </div>
                     </section>
-                    {/* ... (Rest of your JSX remains the same) ... */}
-                    <section><h2 className="text-2xl font-semibold border-b pb-2 mb-4">Short Answer Questions</h2><div className="space-y-6">{testData.short_questions.map((q, index) => ( <div key={index} className="p-4 rounded-lg bg-gray-50 border"><p className="font-semibold">{q.question} <span className="font-normal text-gray-500">({q.marks} Marks)</span></p><p className="text-sm mt-2 p-2 border bg-white rounded-md"><strong>Your Answer:</strong> {userAnswers.short_questions[index] || "Not Answered"}</p><div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md"><p className="font-bold text-blue-800">Score: {gradedResults.short_questions[index].score} / {q.marks}</p><p className="text-sm text-blue-700 mt-1"><strong>Feedback:</strong> {gradedResults.short_questions[index].feedback}</p></div></div>))}</div></section>
-                    <section><h2 className="text-2xl font-semibold border-b pb-2 mb-4">Long Answer Questions</h2><div className="space-y-6">{testData.long_questions.map((q, index) => ( <div key={index} className="p-4 rounded-lg bg-gray-50 border"><p className="font-semibold">{q.question} <span className="font-normal text-gray-500">({q.marks} Marks)</span></p><p className="text-sm mt-2 p-2 border bg-white rounded-md"><strong>Your Answer:</strong> {userAnswers.long_questions[index] || "Not Answered"}</p><div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md"><p className="font-bold text-blue-800">Score: {gradedResults.long_questions[index].score} / {q.marks}</p><p className="text-sm text-blue-700 mt-1"><strong>Feedback:</strong> {gradedResults.long_questions[index].feedback}</p></div></div>))}</div></section>
+                    <section>
+                        <h2 className="text-2xl font-semibold border-b pb-2 mb-4">Short Answer Questions</h2>
+                        <div className="space-y-6">
+                            {testData.short_questions.map((q, index) => (
+                                <div key={index} className="p-4 rounded-lg bg-gray-50 border">
+                                    <p className="font-semibold">{q.question} <span className="font-normal text-gray-500">({q.marks} Marks)</span></p>
+                                    <p className="text-sm mt-2 p-2 border bg-white rounded-md"><strong>Your Answer:</strong> {userAnswers.short_questions[index] || "Not Answered"}</p>
+                                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                        <p className="font-bold text-blue-800">Score: {gradedResults.short_questions[index]?.score ?? "Error"} / {q.marks}</p>
+                                        <p className="text-sm text-blue-700 mt-1"><strong>Feedback:</strong> {gradedResults.short_questions[index]?.feedback ?? "Could not grade."}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                    <section>
+                        <h2 className="text-2xl font-semibold border-b pb-2 mb-4">Long Answer Questions</h2>
+                        <div className="space-y-6">
+                            {testData.long_questions.map((q, index) => (
+                                <div key={index} className="p-4 rounded-lg bg-gray-50 border">
+                                    <p className="font-semibold">{q.question} <span className="font-normal text-gray-500">({q.marks} Marks)</span></p>
+                                    <p className="text-sm mt-2 p-2 border bg-white rounded-md"><strong>Your Answer:</strong> {userAnswers.long_questions[index] || "Not Answered"}</p>
+                                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                                        <p className="font-bold text-blue-800">Score: {gradedResults.long_questions[index]?.score ?? "Error"} / {q.marks}</p>
+                                        <p className="text-sm text-blue-700 mt-1"><strong>Feedback:</strong> {gradedResults.long_questions[index]?.feedback ?? "Could not grade."}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
                 </div>
             </div>
         </main>
