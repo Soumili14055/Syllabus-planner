@@ -1,8 +1,9 @@
 // File: src/firebase/config.ts
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'; // Import GoogleAuthProvider
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -19,8 +20,7 @@ const firebaseConfig = {
 // Initialize Firebase for SSR
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-
-// Create and export the GoogleAuthProvider instance
+const db = getFirestore(app); // Initialize the Firestore database
 const googleProvider = new GoogleAuthProvider();
 
 // Initialize Analytics only on the client side if supported
@@ -28,4 +28,5 @@ const analytics = typeof window !== 'undefined' ?
     isSupported().then(yes => yes ? getAnalytics(app) : null) : 
     Promise.resolve(null);
 
-export { app, auth, analytics, googleProvider }; // Add googleProvider to the exports
+// ✅ FIX: Added 'db' to the export statement.
+export { app, auth, db, analytics, googleProvider };

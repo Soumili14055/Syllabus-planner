@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, FormEvent, useRef, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation"; // ✅ Import usePathname
+import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/firebase/config";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
@@ -22,7 +22,7 @@ const UploadIcon = () => (
   </svg>
 );
 
-// ✅ --- Responsive and Sticky Navbar Component ---
+// --- Responsive and Sticky Navbar Component ---
 const Navbar = ({ user, onLogout }: { user: User | null; onLogout: () => void; }) => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
@@ -34,7 +34,6 @@ const Navbar = ({ user, onLogout }: { user: User | null; onLogout: () => void; }
   };
 
   return (
-    // ✅ Added sticky, top-0, and z-50 to keep the navbar at the top
     <nav className="bg-white shadow-md w-full sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -45,7 +44,6 @@ const Navbar = ({ user, onLogout }: { user: User | null; onLogout: () => void; }
               </a>
             </div>
           </div>
-          {/* Desktop Menu */}
           <div className="hidden md:block">
             <div className="ml-4 flex items-center md:ml-6 space-x-4">
               <Link href="/dashboard" className={getLinkClass("/dashboard")}>
@@ -71,7 +69,6 @@ const Navbar = ({ user, onLogout }: { user: User | null; onLogout: () => void; }
               )}
             </div>
           </div>
-          {/* Hamburger Button for Mobile */}
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -89,7 +86,6 @@ const Navbar = ({ user, onLogout }: { user: User | null; onLogout: () => void; }
           </div>
         </div>
       </div>
-      {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
@@ -224,8 +220,9 @@ export default function SyllabusForm() {
                   <span className="text-indigo-600 font-bold">Step 1:</span>{" "}
                   Upload Your Syllabus
                 </h3>
+                {/* ✅ FIX: Updated text to include JPG */}
                 <p className="text-sm text-gray-500 mb-4">
-                  We'll analyze the content to create your plan. (PDF format only)
+                  We&apos;ll analyze the content to create your plan. (PDF, PNG, JPG, or JPEG)
                 </p>
                 <div className="flex items-center justify-center w-full" onClick={() => fileInputRef.current?.click()}>
                   <label htmlFor="syllabusFile" className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
@@ -235,9 +232,18 @@ export default function SyllabusForm() {
                         <span className="font-semibold">Click to upload</span>{" "}
                         or drag and drop
                       </p>
-                      <p className="text-xs text-gray-500">PDF (MAX. 5MB)</p>
+                      {/* ✅ FIX: Updated text to include JPG */}
+                      <p className="text-xs text-gray-500">PDF, PNG, JPG, JPEG (MAX. 5MB)</p>
                     </div>
-                    <input ref={fileInputRef} id="syllabusFile" type="file" className="hidden" accept=".pdf" onChange={handleFileChange} />
+                    <input 
+                        ref={fileInputRef} 
+                        id="syllabusFile" 
+                        type="file" 
+                        className="hidden" 
+                        // ✅ FIX: Added image formats to the accept attribute
+                        accept=".pdf,.jpg,.jpeg" 
+                        onChange={handleFileChange} 
+                    />
                   </label>
                 </div>
                 {fileName && (
